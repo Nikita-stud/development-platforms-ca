@@ -1,4 +1,4 @@
-# SQL, EXPRESS, TYPESCRIPT run Database
+# SQL, EXPRESS, TYPESCRIPT ran Database
 
 Endpoints built with Express and TypeScript for managing news articles with user authentication, where data is stored and retrieved from within SQL database
 
