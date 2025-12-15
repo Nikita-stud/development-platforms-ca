@@ -1,16 +1,14 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
-import { pool } from './database';
+import 'dotenv/config';
 import { Request, Response, NextFunction } from 'express';
+import articleRoutes from './routes/articles';
+import authRoutes from './routes/auth';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 
-dotenv.config();
-
 const app = express();
 app.use(cors());
-app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,15 +22,39 @@ const swaggerOptions = {
     },
     servers: [{ url: `http://localhost:${PORT}` }],
   },
-  apis: ['../src/routes/*.ts'],
+  apis: ['./src/routes/*.ts'],
 };
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+app.use(express.json());
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/articles', articleRoutes);
+app.use('/auth', authRoutes);
+
+let count = 0;
+app.use((req: Request, res: Response, next: NextFunction) => {
+  count += 1;
+  res.setHeader('X-Request-Count', count.toString());
+  next();
+});
+
+export function checkAuth(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({
+      error: 'Missing authorization header',
+    });
+  }
+  if (authHeader !== 'Bearer secret123') {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  next();
+}
 
 app.use((req, res) => {
   res.status(404).json({
     error: 'Route not found',
-    //Will show GET etc and the URL
     message: `Cannot ${req.method} ${req.originalUrl}`,
   });
 });
