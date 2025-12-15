@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { pool } from '../database';
 import { Article } from '../interface/interface';
+import { authenticateToken } from '../middleware/auth-validation';
+import { validateArticleData } from '../middleware/article-validation';
+import { ResultSetHeader } from 'mysql2';
 
 const router = Router();
 
@@ -29,6 +32,61 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Database error:', error);
     res.status(500).json({ error: 'Failed to fetch articles' });
+  }
+});
+
+/**
+ * @swagger
+ * /articles:
+ *   post:
+ *     summary: Create a new article (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Article created successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/', authenticateToken, validateArticleData, async (req, res) => {
+  try {
+    const { title, body, category } = req.body;
+    const submitted_by = req.user!.id;
+
+    const [result]: [ResultSetHeader, any] = await pool.execute(
+      'INSERT INTO articles (title, body, category, submitted_by) VALUES (?, ?, ?, ?)',
+      [title, body, category, submitted_by]
+    );
+
+    const article: Article = {
+      id: result.insertId,
+      title,
+      body,
+      category,
+      submitted_by,
+      created_at: new Date(),
+    };
+
+    res.status(201).json({
+      message: 'Article created successfully',
+      article,
+    });
+  } catch (error) {
+    console.error('Database error:', error);
+    res.status(500).json({ error: 'Failed to create article' });
   }
 });
 

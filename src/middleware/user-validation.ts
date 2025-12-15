@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const requiredUserDataSchema = z.object({
-  email: z.email('Email must be a valid email'),
+  email: z.string().email({ message: 'Email must be a valid email' }),
   password: z
     .string()
     .regex(

@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { pool } from '../database';
 import { ResultSetHeader } from 'mysql2';
-import { UserResponse, User, Article } from '../interface/interface';
+import { UserResponse, User } from '../interface/interface';
 import { validateRequiredUserData } from '../middleware/validation';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt';
-import { authenticateToken } from '../middleware/auth-validation';
 
 const router = Router();
 
@@ -79,34 +78,6 @@ router.post('/login', validateRequiredUserData, async (req, res) => {
       message: 'Login successful',
       user: userResponse,
       token,
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to log in' });
-  }
-});
-
-router.post('/articles', authenticateToken, async (req, res) => {
-  try {
-    const bodyData = req.body;
-    const { title, body, category, submitted_by } = bodyData;
-
-    const [result]: [ResultSetHeader, any] = await pool.execute(
-      'INSERT INTO articles (title, body, category, submitted_by) VALUES (?, ?, ?, ?)',
-      [title, body, category, submitted_by]
-    );
-
-    const article: Article = {
-      id: result.insertId,
-      title,
-      body,
-      category,
-      submitted_by,
-      created_at: new Date(),
-    };
-
-    res.status(201).json({
-      message: 'Article created',
-      article,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to log in' });
